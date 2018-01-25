@@ -163,7 +163,7 @@ def generateGameplay(window, currentRolesList, numberOfPlayers, playersByRoles):
         row = 2
         #Creating a while loop to iterate through all the players
         while a<numberOfPlayers:
-            #Checking which are the current role selected by the for loop
+            #Checking which is the current role selected by the for loop
             if playersByRoles[a][1]==role:
                 #Assigning a variable to the check button
                 checkButtons[playersByRoles[a][0]] = IntVar()
@@ -203,6 +203,27 @@ def doctorSubmit():
             savedByDoctor = name
     #Destroying the gameplay window
     gameplay.destroy()
+
+#A function to run once the investigator has selected who to investigate
+def investigatorSubmit():
+    #Creating a global variable to store the name and role of the person investigated
+    global investigatedArray
+    #Creating a for loop to determine who was chosen by the investigator
+    for name in playerNames:
+        #Checking if the player was selected
+        if playerCheckButtons[name].get():
+            #Assigning the variable to the player that was selected to be investigated
+            investgated = name
+    #Creating a for loop to check what the role was of the player selected
+    for i, j in enumerate(playersByRoles):
+        if investgated in j:
+            #Adding the name and role to an array
+            investigatedArray = playersByRoles[i]
+    #Destroying the window for the investigator input
+    gameplay.destroy()
+
+def destroyInvestigatorWindow():
+    investigatorWindow.destroy()
 
 def endGameSubmit():
     endGameWindow.destroy()
@@ -252,7 +273,7 @@ whatRolesLabel = Label(setup, text="What roles are you playing with?")
 whatRolesLabel.grid(row=1, column=0, sticky=W)
 
 #Creating a list of all the availible roles
-roles = ["Mafia", "Doctor"]
+roles = ["Mafia", "Doctor", "Investigator"]
 #Creating a blank list to store the check buttons for the roles
 setupCheckButtons = {}
 #Creating the check buttons for the role selection
@@ -326,6 +347,7 @@ while True:
     #Clearing the values assigned to the killedByMafia and savedByDoctor variable
     killedByMafia = ""
     savedByDoctor = ""
+    investgated = ""
 
 #-------------------------MAFIA GAMEPLAY----------------------------------------
     #Checking if there are any mafia players still left
@@ -384,6 +406,59 @@ while True:
 
         #Creating a mainloop for the gameplay window
         gameplay.mainloop()
+
+#-------------------------INVESTIGATOR GAMEPLAY---------------------------------
+    #Checking if there are any mafia players still left
+    if any("Investigator" in sublist for sublist in playersByRoles):
+        #Creating a window for the gameplay and titling it
+        gameplay = Tk()
+        gameplay.title("Gameplay")
+        #Setting the height and width of the setup window
+        width, height = gameplay.winfo_screenwidth(), gameplay.winfo_screenheight()
+        #Setting the height and width to a fourth of the screen size
+        gameplay.geometry('%dx%d+0+0' % (width/3,height/2.8))
+        #Ensuring the setup window is ontop of the root window
+        gameplay.attributes("-topmost", True)
+        #Assigning the action text to a variable
+        actionText = StringVar()
+        #Creating the action variable
+        actionLabel = Label(gameplay, textvariable = actionText).grid(row=0, column=0, sticky=W)
+        #Generating the labels for the current roles being played with
+        generateLabels(currentRolesList, gameplay, 1, 0, 1, 1, 1, padx=10, sticky=W)
+        #Creating the players check buttons
+        playerCheckButtons = generateGameplay(gameplay, currentRolesList, numberOfPlayers, playersByRoles)
+
+        #Setting the action text to tell the user to select who the investigator wants to investigate
+        actionText.set("Who does the investigator want to investigate?")
+        #Create a submit button
+        submitButton = Button(gameplay, text="Submit", command=investigatorSubmit)
+        #Assigning the location of the button
+        submitButton.grid(column=2, sticky = S)
+
+        #Creating a mainloop for the gameplay window
+        gameplay.mainloop()
+
+        #Creating a window to display the response to the investigator
+        investigatorWindow = Tk()
+        #Titling the window
+        investigatorWindow.title("Investigator")
+        investigatorWindow.attributes("-topmost", True)
+        #Creating a string to store the name and role of the investigated player
+        investigatedText = (investigatedArray[0] + " is " + investigatedArray[1])
+        #Creating a label to output the information to the user
+        investigatedLabel = Label(investigatorWindow, text=investigatedText)
+        #Packing the label into the window
+        investigatedLabel.pack()
+        #Creating a button so that the user can continue
+        investigatedButton = Button(investigatorWindow, text="Next", command=destroyInvestigatorWindow)
+        #Packing the button into the window
+        investigatedButton.pack()
+
+        #Creating a mainloop in which to run the window
+        investigatorWindow.mainloop()
+
+
+
 
 
 #----------------------------LOGIC----------------------------------------------
