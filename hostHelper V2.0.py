@@ -11,7 +11,7 @@ def generateCheckbutton(textValues, window, startingRow):
     column=0
     #Creating a for loop to generate the check buttons
     for text in textValues:
-        #Checking if the check button has exceeded the dimensions of the window
+        #Checking if the check button ha exceeded the dimensions of the window
         if row > 3:
             #Going to the next column
             column += 1
@@ -224,6 +224,23 @@ def investigatorSubmit():
 
 def destroyInvestigatorWindow():
     investigatorWindow.destroy()
+    
+def destroyArsonistWindow():
+    global arsonLight
+    arsonLight = True
+    arsonistWindow.destroy()
+    
+def nextArsonistWindow():
+    arsonistWindow.destroy()
+    
+def arsonistSubmit():
+    for name in playerNames:
+        #Checking if the player was selected
+        if playerCheckButtons[name].get():
+            #Assigning the variable to the player that was selected to be investigated
+            doused = name
+    arsonedArr.append(doused)
+    gameplay.destroy()
 
 def endGameSubmit():
     endGameWindow.destroy()
@@ -253,7 +270,7 @@ setup.title("Setup")
 #Setting the height and width of the setup window
 width, height = setup.winfo_screenwidth(), setup.winfo_screenheight()
 #Setting the height and width to a fourth of the screen size
-setup.geometry('%dx%d+0+0' % (width/5,height/9))
+setup.geometry('%dx%d+0+0' % (width/4,height/9))
 #Ensuring the setup window is ontop of the root window
 setup.attributes("-topmost", True)
 
@@ -273,7 +290,7 @@ whatRolesLabel = Label(setup, text="What roles are you playing with?")
 whatRolesLabel.grid(row=1, column=0, sticky=W)
 
 #Creating a list of all the availible roles
-roles = ["Mafia", "Doctor", "Investigator"]
+roles = ["Mafia", "Doctor", "Investigator", "Arsonist"]
 #Creating a blank list to store the check buttons for the roles
 setupCheckButtons = {}
 #Creating the check buttons for the role selection
@@ -342,12 +359,23 @@ global playerCheckButtons
 #Creating a global variable for the list that stores the players by role
 global playersByRoles
 
+global arsonedArr
+arsonedArr = []
+a = 0
+while a<numberOfPlayers:
+    #Checking which is the current role selected by the for loop
+    if playersByRoles[a][1]=="Arsonist":
+        arsonedArr.append(playersByRoles[a][0])
+    a = a+1
+
 #Creating a while loop to ru the main gameplay section
 while True:
     #Clearing the values assigned to the killedByMafia and savedByDoctor variable
     killedByMafia = ""
     savedByDoctor = ""
     investgated = ""
+    arsonLight = False
+    arsoned = ""
 
 #-------------------------MAFIA GAMEPLAY----------------------------------------
     #Checking if there are any mafia players still left
@@ -457,9 +485,48 @@ while True:
         #Creating a mainloop in which to run the window
         investigatorWindow.mainloop()
 
+#-------------------------------ARSONIST GAMEPLAY-------------------------------
 
+    if any("Arsonist" in sublist for sublist in playersByRoles):
+        arsonistWindow = Tk()
+        arsonistWindow.title("Arsonist")
+        arsonistWindow.attributes("-topmost", True)
+        actionText = "Does the arsonist want to set the arsoned alight?"
+        actionLabel = Label(arsonistWindow, text=actionText)
+        actionLabel.pack()
+        yesButton = Button(arsonistWindow, text="Yes", command=destroyArsonistWindow)
+        yesButton.pack()
+        noButton = Button(arsonistWindow, text="No", command=nextArsonistWindow)
+        noButton.pack()
+        arsonistWindow.mainloop()
+        
+        if not arsonLight:
+            gameplay = Tk()
+            gameplay.title("Gameplay")
+            #Setting the height and width of the setup window
+            width, height = gameplay.winfo_screenwidth(), gameplay.winfo_screenheight()
+            #Setting the height and width to a fourth of the screen size
+            gameplay.geometry('%dx%d+0+0' % (width/3,height/2.8))
+            #Ensuring the setup window is ontop of the root window
+            gameplay.attributes("-topmost", True)
+            #Assigning the action text to a variable
+            actionText = StringVar()
+            #Creating the action variable
+            actionLabel = Label(gameplay, textvariable = actionText).grid(row=0, column=0, sticky=W)
+            #Generating the labels for the current roles being played with
+            generateLabels(currentRolesList, gameplay, 1, 0, 1, 1, 1, padx=10, sticky=W)
+            #Creating the players check buttons
+            playerCheckButtons = generateGameplay(gameplay, currentRolesList, numberOfPlayers, playersByRoles)
 
+            #Setting the action text to tell the user to select who the investigator wants to investigate
+            actionText.set("Who does the arsonist want to douse in oil?")
+            #Create a submit button
+            submitButton = Button(gameplay, text="Submit", command=arsonistSubmit)
+            #Assigning the location of the button
+            submitButton.grid(column=2, sticky = S)
 
+            #Creating a mainloop for the gameplay window
+            gameplay.mainloop()
 
 #----------------------------LOGIC----------------------------------------------
     #Assigning a variable to keep track if the doctor and the mafia picked the same people
@@ -474,6 +541,17 @@ while True:
                 playerNames.remove(killedByMafia)
         #Reducing the number of players by 1
         numberOfPlayers = numberOfPlayers-1
+    if arsonLight:
+        if (killedByMafia != savedByDoctor):
+            if killedByMafia in arsonedArr:
+                arsonedArr.remove(killedByMafia)
+        for arsoned in arsonedArr:
+            for i, j in enumerate(playersByRoles):
+                if arsoned in j:
+                    #Deleting the player from the playersByRoles and playerNames lists
+                    del playersByRoles[i]
+                    playerNames.remove(arsoned)
+        numberOfPlayers = numberOfPlayers-len(arsonedArr)
     #If not changing the variable to true
     else:
         noneDied = True
@@ -485,13 +563,14 @@ while True:
     nightInfo = Tk()
     nightInfo.title("Night")
     nightInfo.attributes("-topmost", True)
-
     #Checking if no-one died
     if noneDied:
         whoDied = "Died: No-one died"
     #If not telling the user who died in the night
+    elif killedByMafia == savedByDoctor:
+        whoDied = ("Died: " + " ".join(arsonedArr))
     else:
-        whoDied = ("Died: " + killedByMafia)
+        whoDied = ("Died: " + killedByMafia + " " + " ".join(arsonedArr))
 
     #Creating a label to display who died in the night
     deathLabel = Label(nightInfo, text = whoDied)
